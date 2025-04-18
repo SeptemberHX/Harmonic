@@ -1,13 +1,24 @@
 import axios, { AxiosResponse } from '@ohos/axios'
 import CryptoJS from '@ohos/crypto-js'
-import { ApiResponse, Artist, LyricsList, Playlist, SubsonicResponse } from './Interface'
+import { Album, ApiResponse, Artist, LyricsList, Playlist, SubsonicResponse } from './Interface'
 import { promptAction } from '@kit.ArkUI'
+import { i18n, intl } from '@kit.LocalizationKit'
 
 axios.defaults.headers.post['Content-Type'] = 'application/json'
 
 let salt = 'abcdef'
 let version = '1.16.1'
 let client = 'Harmonic'
+
+let transliterator = i18n.Transliterator.getInstance('Any-Latn');
+let options: intl.CollatorOptions = {
+  localeMatcher: "lookup",
+  usage: "sort",
+  sensitivity: "variant",
+  numeric: true
+};
+let locale = new intl.Locale();
+let collator = new intl.Collator(locale.toString(), options);
 
 export async function ping(baseURL: string, username: string, password: string, ) {
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
@@ -106,16 +117,52 @@ export async function getAlbum(baseURL: string, username: string, password: stri
   }
 }
 
-export async function getSong(baseURL: string, username: string, password: string, id: string) {
+export async function getAlbums(baseURL: string, username: string, password: string) {
+  const albumFetchSize = 10000
+  let albums: Album[] = []
+  let currFetchedCount = 0
+
+  do {
+    let auth = `?u=${username}&t=${CryptoJS.MD5(password +
+      salt)}&s=${salt}&v=${version}&c=${client}&f=json&size=${albumFetchSize}`
+    try {
+      const response: AxiosResponse =
+        await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getAlbumList2' + auth +
+          `&offset=${albums.length}` + `&type=alphabeticalByName`, {
+          timeout: 10000
+        })
+      const subsonicResponse: SubsonicResponse = response.data["subsonic-response"]
+      currFetchedCount = subsonicResponse.albumList2!.album.length
+      albums = albums.concat(subsonicResponse.albumList2!.album)
+      console.log(`Album length ${albums.length}`)
+    } catch (error) {
+      console.error(JSON.stringify(error));
+      return []
+    }
+  } while (currFetchedCount == albumFetchSize)
+
+  return albums
+}
+
+export async function getRandomSongs(baseURL: string, username: string, password: string) {
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
   try {
     const response: AxiosResponse =
-      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getSong' + auth + `&id=${id}`, {
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getRandomSongs' + auth + `&size=50`, {
         timeout: 10000
       })
-    console.log(JSON.stringify(response.data))
+    const subsonicResponse: SubsonicResponse = response.data["subsonic-response"];
+
+    if (subsonicResponse.randomSongs) {
+      return subsonicResponse.randomSongs.song.sort((a, b) => {
+        return collator.compare(transliterator.transform(a.title), transliterator.transform(b.title));
+      });
+    } else {
+      return [];
+    }
   } catch (error) {
     console.error(JSON.stringify(error));
+    return [];
   }
 }
 

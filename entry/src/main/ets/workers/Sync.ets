@@ -40,6 +40,9 @@ async function syncFromServer(baseURL: string, username: string, password: strin
   console.log("Server status", status)
   if (status === 'ok') {
     console.log("开始同步服务器");
+    workerPort.postMessage({ type: "unchanged" });
+
+    return
     let remote_artists: Artist[] = []
     let remote_albums: Album[] = []
     let remote_songs: Song[] = []

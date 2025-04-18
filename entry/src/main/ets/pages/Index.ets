@@ -1293,7 +1293,7 @@ struct Index {
             Button({ type: ButtonType.Normal }) {
               Row() {
                 Image("")
-                Text("歌曲")
+                Text("主页")
                   .fontSize(20)
                   .fontColor($r('app.color.font'))
               }
@@ -1311,7 +1311,7 @@ struct Index {
               })
               this.pageStack.clear()
               this.nowPage = 0
-              this.title = '歌曲'
+              this.title = '主页'
             })
 
             Button({ type: ButtonType.Normal }) {

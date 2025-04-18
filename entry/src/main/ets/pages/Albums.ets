@@ -1,5 +1,7 @@
 import { Album, Song } from '../utils/Interface'
 import { curves } from '@kit.ArkUI'
+import { GenericLazyDataSource } from '../data/GenericLazyDataSource'
+import { getAlbums } from '../utils/Api'
 
 @Component
 export default struct Albums {
@@ -22,10 +24,12 @@ export default struct Albums {
   @Consume showProgress: boolean
   @State coverSize: number = 320
 
+  private albumDataSource: GenericLazyDataSource<Album> = new GenericLazyDataSource();
+
   build() {
     Column() {
       Grid() {
-        ForEach(this.albums, (album: Album, index) => {
+        LazyForEach(this.albumDataSource, (album: Album, index) => {
           GridItem() {
             Button({ type: ButtonType.Normal }) {
               Column() {
@@ -81,5 +85,24 @@ export default struct Albums {
     }
     .width('100%')
     .height('100%')
+    .onVisibleAreaChange(
+      // Define thresholds: e.g., [0.0, 0.1, 0.9, 1.0] or just a single value
+      // Using [0.01] triggers when it becomes even slightly visible
+      [0.01],
+      // Callback function
+      async (isVisible: boolean, currentRatio: number) => {
+        console.log(`AlbumsComponent Visibility Changed: isVisible=${isVisible}, currentRatio=${currentRatio.toFixed(2)}`);
+        // Check if component is becoming visible and data hasn't been loaded yet
+        if (isVisible && currentRatio > 0) {
+          // Call the data fetching function
+          console.log('Loading remote albums...')
+          this.albums = await getAlbums(this.baseURL, this.username, this.password)
+          this.albumDataSource.updateData(this.albums);
+          console.log('Fetched')
+        }
+        // Note: We check 'this.hasLoaded' inside the fetch function too,
+        // but checking here prevents unnecessary calls to the async function itself.
+      }
+    )
   }
 }

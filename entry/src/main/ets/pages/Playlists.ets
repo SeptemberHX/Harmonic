@@ -1,8 +1,12 @@
+import { getPlaylists } from '../utils/Api'
 import { Playlist } from '../utils/Interface'
 import createPlaylistBuilder from './dialogs/CreatePlaylist'
 
 @Component
 export default struct Playlists {
+  @StorageLink('baseURL') baseURL: string = ''
+  @StorageLink('username') username: string = ''
+  @StorageLink('password') password: string = ''
   @Consume pageStack: NavPathStack
   @Consume startPlaying: boolean
   @Consume showSidebar: boolean
@@ -117,5 +121,23 @@ export default struct Playlists {
     }
     .width('100%')
     .height('100%')
+    .onVisibleAreaChange(
+      // Define thresholds: e.g., [0.0, 0.1, 0.9, 1.0] or just a single value
+      // Using [0.01] triggers when it becomes even slightly visible
+      [0.01],
+      // Callback function
+      async (isVisible: boolean, currentRatio: number) => {
+        console.log(`PlaylistsComponent Visibility Changed: isVisible=${isVisible}, currentRatio=${currentRatio.toFixed(2)}`);
+        // Check if component is becoming visible and data hasn't been loaded yet
+        if (isVisible && currentRatio > 0) {
+          // Call the data fetching function
+          console.log('Loading remote playlists...')
+          this.playlists = await getPlaylists(this.baseURL, this.username, this.password)
+          console.log('Fetched')
+        }
+        // Note: We check 'this.hasLoaded' inside the fetch function too,
+        // but checking here prevents unnecessary calls to the async function itself.
+      }
+    )
   }
 }

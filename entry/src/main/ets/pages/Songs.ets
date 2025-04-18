@@ -2,7 +2,7 @@ import { curves } from '@kit.ArkUI';
 import { media } from '@kit.MediaKit';
 import { i18n } from '@kit.LocalizationKit';
 import { avSession as AVSessionManager } from '@kit.AVSessionKit';
-import { getLyrics, getStarred } from '../utils/Api';
+import { getLyrics, getRandomSongs, getStarred } from '../utils/Api';
 import { Line, Song, StructuredLyric } from '../utils/Interface';
 
 let indexUtil = i18n.getInstance();
@@ -244,5 +244,23 @@ export default struct Songs {
     }
     .width('100%')
     .height('100%')
+    .onVisibleAreaChange(
+      // Define thresholds: e.g., [0.0, 0.1, 0.9, 1.0] or just a single value
+      // Using [0.01] triggers when it becomes even slightly visible
+      [0.01],
+      // Callback function
+      async (isVisible: boolean, currentRatio: number) => {
+        console.log(`HomePageComponent Visibility Changed: isVisible=${isVisible}, currentRatio=${currentRatio.toFixed(2)}`);
+        // Check if component is becoming visible and data hasn't been loaded yet
+        if (isVisible && currentRatio > 0) {
+          // Call the data fetching function
+          console.log('Loading remote random songs...')
+          this.songs = await getRandomSongs(this.baseURL, this.username, this.password)
+          console.log('Fetched')
+        }
+        // Note: We check 'this.hasLoaded' inside the fetch function too,
+        // but checking here prevents unnecessary calls to the async function itself.
+      }
+    )
   }
 }

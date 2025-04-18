@@ -1,7 +1,7 @@
 import { curves } from '@kit.ArkUI';
 import { media } from '@kit.MediaKit';
 import { avSession as AVSessionManager } from '@kit.AVSessionKit';
-import { getLyrics, getStarred } from '../utils/Api';
+import { getAlbum, getLyrics, getStarred } from '../utils/Api';
 import { Album, Artist, Line, Song, StructuredLyric } from '../utils/Interface';
 
 function formatDuration(seconds: number): string {
@@ -118,7 +118,11 @@ export default struct AlbumDetail {
     return array;
   }
 
-  aboutToAppear(): void {
+  async aboutToAppear(): Promise<void> {
+    if (this.album) {
+      this.album.song = await getAlbum(this.baseURL, this.username, this.password, this.album.id);
+    }
+
     const groupedSongsMap = new Map<number, Song[]>();
     this.album.song!.forEach((song) => {
       let disc = song.discNumber;

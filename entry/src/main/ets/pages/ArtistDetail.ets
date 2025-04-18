@@ -1,5 +1,6 @@
 import { Album, Artist } from '../utils/Interface';
 import { curves } from '@kit.ArkUI';
+import { getArtist } from '../utils/Api';
 
 @Builder
 export function ArtistDetailBuilder() {
@@ -26,6 +27,12 @@ export default struct ArtistDetail {
   @State albumPerRow: number = 3
   @State profileSize: number = 256
   @State coverSize: number = 256
+
+  async aboutToAppear(): Promise<void> {
+    if (this.artist) {
+      this.artist.album = await getArtist(this.baseURL, this.username, this.password, this.artist.id);
+    }
+  }
 
   build() {
     NavDestination() {

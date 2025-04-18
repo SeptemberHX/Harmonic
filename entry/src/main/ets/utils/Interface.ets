@@ -36,6 +36,14 @@ export interface Indexes {
   index: Index[];
 }
 
+export interface AlbumList {
+  album: Album[];
+}
+
+export interface SongList {
+  song: Song[];
+}
+
 export interface SubsonicResponse {
   status: string;
   version: string;
@@ -51,6 +59,8 @@ export interface SubsonicResponse {
   lyricsList?: LyricsList;
   starred?: Starred;
   shares?: Shares;
+  albumList2?: AlbumList;
+  randomSongs?: SongList;
 }
 
 export interface ApiResponse {
