@@ -57,7 +57,6 @@ let locale = new intl.Locale();
 let collator = new intl.Collator(locale.toString(), options);
 let filesDir = context.filesDir;
 
-const workerInstance: worker.ThreadWorker = new worker.ThreadWorker('entry/ets/workers/Sync.ets');
 
 @Entry
 @Component
@@ -271,7 +270,6 @@ struct Index {
 
   async connectToServer() {
     this.linkImage = $rawfile('link-sync.png')
-    workerInstance.postMessage({ type: "stop" })
     console.log("开始连接服务器")
     let status: string | null = await ping(this.baseURL, this.username, this.password)
     console.log("Server status", status)
@@ -282,21 +280,6 @@ struct Index {
         message: '连接服务器成功！',
         duration: 500
       });
-      try {
-        workerInstance.postMessage({
-          type: "start",
-          baseURL: this.baseURL,
-          username: this.username,
-          password: this.password,
-          artists: JSON.stringify(this.artists),
-          albums: JSON.stringify(this.albums),
-          songs: JSON.stringify(this.songs),
-          playlists: JSON.stringify(this.playlists),
-          starredSongs: JSON.stringify(this.starredSongs),
-        });
-      } catch (e) {
-        console.error('postMessage failed:', e);
-      }
     } else {
       this.linkImage = $rawfile('link-faild.png')
       console.log("连接服务器失败")
@@ -1100,160 +1083,7 @@ struct Index {
       this.serverStatus = false
       this.linkImage = $rawfile('link-faild.png')
     } else {
-      this.showProgress = true
-      let bufSize = 4096;
-      let readSize = 0;
-      let str = "";
-      let buf = new ArrayBuffer(bufSize);
-      let readOptions: ReadOptions = {
-        offset: readSize,
-        length: bufSize
-      };
-      let file = fs.openSync(filesDir + '/artists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-      let readLen = fs.readSync(file.fd, buf, readOptions);
-      if (readLen === 0) {
-        this.artists = []
-        fs.writeSync(file.fd, "[]");
-      } else {
-        while (readLen > 0) {
-          readSize += readLen;
-          str += buffer.from(buf, 0, readLen).toString();
-          readOptions.offset = readSize;
-          readLen = fs.readSync(file.fd, buf, readOptions);
-        }
-        this.artists = JSON.parse(str);
-      }
-      fs.closeSync(file);
-      str = "";
-      readSize = 0;
-      readOptions.offset = 0;
-      file = fs.openSync(filesDir + '/albums.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-      readLen = fs.readSync(file.fd, buf, readOptions);
-      if (readLen === 0) {
-        this.albums = []
-        fs.writeSync(file.fd, "[]");
-      } else {
-        while (readLen > 0) {
-          readSize += readLen;
-          str += buffer.from(buf, 0, readLen).toString();
-          readOptions.offset = readSize;
-          readLen = fs.readSync(file.fd, buf, readOptions);
-        }
-        this.albums = JSON.parse(str);
-      }
-      fs.closeSync(file);
-      str = "";
-      readSize = 0;
-      readOptions.offset = 0;
-      file = fs.openSync(filesDir + '/songs.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-      readLen = fs.readSync(file.fd, buf, readOptions);
-      if (readLen === 0) {
-        this.songs = []
-        fs.writeSync(file.fd, "[]");
-      } else {
-        while (readLen > 0) {
-          readSize += readLen;
-          str += buffer.from(buf, 0, readLen).toString();
-          readOptions.offset = readSize;
-          readLen = fs.readSync(file.fd, buf, readOptions);
-        }
-        this.songs = JSON.parse(str);
-      }
-      fs.closeSync(file);
-      str = "";
-      readSize = 0;
-      readOptions.offset = 0;
-      file = fs.openSync(filesDir + '/playlists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-      readLen = fs.readSync(file.fd, buf, readOptions);
-      if (readLen === 0) {
-        this.playlists = []
-        fs.writeSync(file.fd, "[]");
-      } else {
-        while (readLen > 0) {
-          readSize += readLen;
-          str += buffer.from(buf, 0, readLen).toString();
-          readOptions.offset = readSize;
-          readLen = fs.readSync(file.fd, buf, readOptions);
-        }
-        this.playlists = JSON.parse(str);
-      }
-      fs.closeSync(file);
-      str = "";
-      readSize = 0;
-      readOptions.offset = 0;
-      file = fs.openSync(filesDir + '/starredSongs.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-      readLen = fs.readSync(file.fd, buf, readOptions);
-      if (readLen === 0) {
-        this.starredSongs = []
-        fs.writeSync(file.fd, "[]");
-      } else {
-        while (readLen > 0) {
-          readSize += readLen;
-          str += buffer.from(buf, 0, readLen).toString();
-          readOptions.offset = readSize;
-          readLen = fs.readSync(file.fd, buf, readOptions);
-        }
-        this.starredSongs = JSON.parse(str);
-      }
-      fs.closeSync(file);
-      str = "";
-      readSize = 0;
-      readOptions.offset = 0;
-      this.showProgress = false
-      workerInstance.onmessage = async (event) => {
-        if (event.data.type.toString() === "update") {
-          this.artists = JSON.parse(event.data.artists);
-          this.albums = JSON.parse(event.data.albums);
-          this.songs = JSON.parse(event.data.songs);
-          this.playlists = JSON.parse(event.data.playlists);
-          this.starredSongs = JSON.parse(event.data.starredSongs);
-          for (let playlist of this.playlists) {
-            this.selectedPlaylists.push(false)
-          }
-          if (this.nowPlayingSong) {
-            let star = false
-            for (let song of this.starredSongs) {
-              if (song.id === this.nowPlayingSong!.id) {
-                star = true
-                break
-              }
-            }
-            this.nowPlayingStar = star
-            if (this.isPlaying === true) {
-              await this.setPlaybackState(AVSessionManager.PlaybackState.PLAYBACK_STATE_PLAY)
-            } else {
-              await this.setPlaybackState(AVSessionManager.PlaybackState.PLAYBACK_STATE_PAUSE)
-            }
-          }
-          let file =
-            fs.openSync(filesDir + '/artists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-          fs.writeSync(file.fd, JSON.stringify(this.artists));
-          fs.closeSync(file);
-          file =
-            fs.openSync(filesDir + '/albums.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-          fs.writeSync(file.fd, JSON.stringify(this.albums));
-          fs.closeSync(file);
-          file = fs.openSync(filesDir + '/songs.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-          fs.writeSync(file.fd, JSON.stringify(this.songs));
-          fs.closeSync(file);
-          file =
-            fs.openSync(filesDir + '/playlists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-          fs.writeSync(file.fd, JSON.stringify(this.playlists));
-          fs.closeSync(file);
-          file = fs.openSync(filesDir + '/starredSongs.json',
-            fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-          fs.writeSync(file.fd, JSON.stringify(this.starredSongs));
-          fs.closeSync(file);
-          console.log("数据已更新。");
-          console.log("同步服务器完成");
-        } else if (event.data.type.toString() === "unchanged") {
-          console.log("数据无变化。");
-          console.log("同步服务器完成");
-        } else if (event.data.type.toString() === "faild") {
-          this.linkImage = $rawfile('link-faild.png')
-          console.log("同步服务器失败");
-        }
-      }
+      this.showProgress = false;
       await this.connectToServer()
     }
   }
