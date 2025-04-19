@@ -44,6 +44,10 @@ export interface SongList {
   song: Song[];
 }
 
+export interface SearchList {
+  song: Song[];
+}
+
 export interface SubsonicResponse {
   status: string;
   version: string;
@@ -61,6 +65,7 @@ export interface SubsonicResponse {
   shares?: Shares;
   albumList2?: AlbumList;
   randomSongs?: SongList;
+  searchResult3?: SearchList;
 }
 
 export interface ApiResponse {

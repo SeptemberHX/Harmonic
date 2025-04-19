@@ -163,6 +163,28 @@ export async function getAlbums(baseURL: string, username: string, password: str
   return albums
 }
 
+export async function getArtistSongs(baseURL: string, username: string, password: string, artistName: string) {
+  let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
+  try {
+    const response: AxiosResponse =
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/search3' + auth + `&size=500&query=${encodeURIComponent(artistName)}&songCount=500&artistCount=0&albumCount=0`, {
+        timeout: 10000
+      })
+    const subsonicResponse: SubsonicResponse = response.data["subsonic-response"];
+
+    if (subsonicResponse.searchResult3) {
+      return subsonicResponse.searchResult3.song.sort((a, b) => {
+        return collator.compare(transliterator.transform(a.title), transliterator.transform(b.title));
+      });
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    return [];
+  }
+}
+
 export async function getRandomSongs(baseURL: string, username: string, password: string) {
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
   try {
