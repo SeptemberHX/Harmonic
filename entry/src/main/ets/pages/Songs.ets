@@ -45,6 +45,8 @@ export default struct Songs {
   @State coverSize: number = 128
   private listScroller: Scroller = new Scroller
 
+  @State refreshing: boolean = false;
+
   groupLyrics() {
     this.nowPlayingLyricsByGroup = []
     let index = -1
@@ -96,101 +98,111 @@ export default struct Songs {
 
   build() {
     Stack({ alignContent: Alignment.End }) {
-      List({ scroller: this.listScroller }) {
-        ForEach(this.songs, (song: Song, index) => {
-          ListItem() {
-            Button({ type: ButtonType.Normal }) {
-              Row() {
-                Image(this.baseURL + this.getCoverUrl + this.auth + `&id=${song.id}&size=${this.coverSize}`)
-                  .alt($rawfile('nocover.png'))
-                  .objectFit(ImageFit.Contain)
-                  .width(60)
-                  .aspectRatio(1)
-                  .borderRadius(5)
-                Column() {
-                  Text(song.title)
-                    .fontSize(18)
-                    .fontColor($r('app.color.font'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  Text(song.artist + " - " + song.album)
-                    .fontSize(15)
-                    .fontColor($r('app.color.font_secondary'))
-                    .margin({ top: 5 })
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Column() {
+        Refresh({ refreshing: this.refreshing, promptText: "刷新随机音乐列表" }) {
+          List({ scroller: this.listScroller }) {
+            ForEach(this.songs, (song: Song, index) => {
+              ListItem() {
+                Button({ type: ButtonType.Normal }) {
+                  Row() {
+                    Image(this.baseURL + this.getCoverUrl + this.auth + `&id=${song.id}&size=${this.coverSize}`)
+                      .alt($rawfile('nocover.png'))
+                      .objectFit(ImageFit.Contain)
+                      .width(60)
+                      .aspectRatio(1)
+                      .borderRadius(5)
+                    Column() {
+                      Text(song.title)
+                        .fontSize(18)
+                        .fontColor($r('app.color.font'))
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      Text(song.artist + " - " + song.album)
+                        .fontSize(15)
+                        .fontColor($r('app.color.font_secondary'))
+                        .margin({ top: 5 })
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
+                    .width('100%')
+                    .layoutWeight(1)
+                    .margin({ left: 10 })
+                    .alignItems(HorizontalAlign.Start)
+                  }
+                  .width('100%')
+                  .height('100%')
+                  .padding({ right: 15 })
                 }
                 .width('100%')
-                .layoutWeight(1)
-                .margin({ left: 10 })
-                .alignItems(HorizontalAlign.Start)
-              }
-              .width('100%')
-              .height('100%')
-              .padding({ right: 15 })
-            }
-            .width('100%')
-            .height(80)
-            .borderRadius(10)
-            .backgroundColor('#00000000')
-            .padding({ left: 20, right: 20 })
-            .margin({ bottom: index === this.songs.length - 1 ? (this.startPlaying ? 85 : 10) : 0 })
-            .animation({ curve: curves.springMotion(0.6, 1) })
-            .onClick(async () => {
-              animateTo({
-                duration: 300,
-                curve: Curve.EaseOut,
-              }, () => {
-                this.showSidebar = false
-              })
-              this.startPlaying = true
-              await this.avPlayer!.reset()
-              this.isPlaying = true
-              this.nowPlayingSong = song
-              this.nowPlayingLyrics = await getLyrics(this.baseURL, this.username, this.password, song.id)
-              if (this.nowPlayingLyrics !== null) {
-                this.groupLyrics()
-              }
-              this.nowPlayingListOriginal = this.songs.slice()
-              if (this.playMode === AVSessionManager.LoopMode.LOOP_MODE_SHUFFLE) {
-                this.nowPlayingList = this.shuffleList(this.nowPlayingListOriginal.slice())
-              } else {
-                this.nowPlayingList = this.nowPlayingListOriginal.slice()
-              }
-              this.getNowPlayingIndex(song, this.nowPlayingList)
-              this.nowPlayingStar = await this.getStar(song)
-              this.avPlayer!.url = this.baseURL + '/rest/stream' + this.auth + `&id=${song.id}&format=raw`;
-            })
-            .gesture(
-              LongPressGesture()
-                .onAction(async (event: GestureEvent) => {
-                  this.longPressSong = song
-                  this.showMenu = true
-                  this.longPressStar = await this.getStar(song)
+                .height(80)
+                .borderRadius(10)
+                .backgroundColor('#00000000')
+                .padding({ left: 20, right: 20 })
+                .margin({ bottom: index === this.songs.length - 1 ? (this.startPlaying ? 85 : 10) : 0 })
+                .animation({ curve: curves.springMotion(0.6, 1) })
+                .onClick(async () => {
+                  animateTo({
+                    duration: 300,
+                    curve: Curve.EaseOut,
+                  }, () => {
+                    this.showSidebar = false
+                  })
+                  this.startPlaying = true
+                  await this.avPlayer!.reset()
+                  this.isPlaying = true
+                  this.nowPlayingSong = song
+                  this.nowPlayingLyrics = await getLyrics(this.baseURL, this.username, this.password, song.id)
+                  if (this.nowPlayingLyrics !== null) {
+                    this.groupLyrics()
+                  }
+                  this.nowPlayingListOriginal = this.songs.slice()
+                  if (this.playMode === AVSessionManager.LoopMode.LOOP_MODE_SHUFFLE) {
+                    this.nowPlayingList = this.shuffleList(this.nowPlayingListOriginal.slice())
+                  } else {
+                    this.nowPlayingList = this.nowPlayingListOriginal.slice()
+                  }
+                  this.getNowPlayingIndex(song, this.nowPlayingList)
+                  this.nowPlayingStar = await this.getStar(song)
+                  this.avPlayer!.url = this.baseURL + '/rest/stream' + this.auth + `&id=${song.id}&format=raw`;
                 })
-            )
+                .gesture(
+                  LongPressGesture()
+                    .onAction(async (event: GestureEvent) => {
+                      this.longPressSong = song
+                      this.showMenu = true
+                      this.longPressStar = await this.getStar(song)
+                    })
+                )
+              }
+            })
           }
+          .width('100%')
+          .height('100%')
+          .listDirection(Axis.Vertical)
+          .scrollBar(BarState.Off)
+          .edgeEffect(EdgeEffect.Fade)
+          .visibility(this.songs.length > 0 ? Visibility.Visible : Visibility.None)
+          .onScrollIndex((firstIndex: number) => {
+            let initial = indexUtil.getIndex(this.songs[firstIndex].title);
+            if (initial === '…') {
+              this.selectedIndex = 0
+            } else {
+              for (let index = 0; index < indexList.length; index++) {
+                if (indexList[index] === initial) {
+                  this.selectedIndex = index
+                  break
+                }
+              }
+            }
+          })
+        }
+        .width('100%')
+        .onRefreshing(async () => {
+          this.refreshing = true;    // 进入刷新状态
+          this.songs = await getRandomSongs(this.baseURL, this.username, this.password);
+          this.refreshing = false;
         })
       }
-      .width('100%')
-      .height('100%')
-      .listDirection(Axis.Vertical)
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.Fade)
-      .visibility(this.songs.length > 0 ? Visibility.Visible : Visibility.None)
-      .onScrollIndex((firstIndex: number) => {
-        let initial = indexUtil.getIndex(this.songs[firstIndex].title);
-        if (initial === '…') {
-          this.selectedIndex = 0
-        } else {
-          for (let index = 0; index < indexList.length; index++) {
-            if (indexList[index] === initial) {
-              this.selectedIndex = index
-              break
-            }
-          }
-        }
-      })
 
       Column() {
         Text("没有歌曲")
@@ -255,8 +267,13 @@ export default struct Songs {
         if (isVisible && currentRatio > 0) {
           // Call the data fetching function
           console.log('Loading remote random songs...')
-          this.songs = await getRandomSongs(this.baseURL, this.username, this.password)
-          console.log('Fetched')
+
+          if (!this.songs || this.songs.length == 0) {
+            this.songs = await getRandomSongs(this.baseURL, this.username, this.password)
+            console.log('Fetched')
+          } else {
+            console.log('Already fetched')
+          }
         }
         // Note: We check 'this.hasLoaded' inside the fetch function too,
         // but checking here prevents unnecessary calls to the async function itself.

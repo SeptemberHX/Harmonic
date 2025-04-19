@@ -189,7 +189,7 @@ export async function getRandomSongs(baseURL: string, username: string, password
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
   try {
     const response: AxiosResponse =
-      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getRandomSongs' + auth + `&size=500`, {
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getRandomSongs' + auth + `&size=100`, {
         timeout: 10000
       })
     const subsonicResponse: SubsonicResponse = response.data["subsonic-response"];
