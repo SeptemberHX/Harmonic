@@ -2,6 +2,12 @@ import { Artist } from '../utils/Interface'
 import { curves } from '@kit.ArkUI'
 import { getIndexes } from '../utils/Api'
 import { GenericLazyDataSource } from '../data/GenericLazyDataSource'
+import { i18n } from '@kit.LocalizationKit';
+
+let indexUtil = i18n.getInstance();
+let indexList = indexUtil.getIndexList();
+indexList[0] = '#'
+indexList.splice(indexList.length - 1, 1)
 
 @Component
 export default struct Artists {
@@ -21,14 +27,17 @@ export default struct Artists {
   @Consume serverStatus: boolean
   @Consume displayWidth: number
   @Consume showProgress: boolean
+  @Consume selectedIndex: number
+
   @State profileSize: number = 256
   @State artists: Artist[] = []
 
   private artistDataSource: GenericLazyDataSource<Artist> = new GenericLazyDataSource();
+  private gridScroller: Scroller = new Scroller
 
   build() {
-    Column() {
-      Grid() {
+    Stack({ alignContent: Alignment.End }) {
+      Grid(this.gridScroller) {
         LazyForEach(this.artistDataSource, (artist: Artist, index) => {
           GridItem() {
             Button({ type: ButtonType.Normal }) {
@@ -80,6 +89,19 @@ export default struct Artists {
       .edgeEffect(EdgeEffect.Fade)
       .padding({ left: 10, right: 10, bottom: 10 })
       .visibility(this.artists.length > 0 ? Visibility.Visible : Visibility.None)
+      .onScrollIndex((firstIndex: number) => {
+        let initial = indexUtil.getIndex(this.artists[firstIndex].name);
+        if (initial === '…') {
+          this.selectedIndex = 0
+        } else {
+          for (let index = 0; index < indexList.length; index++) {
+            if (indexList[index] === initial) {
+              this.selectedIndex = index
+              break
+            }
+          }
+        }
+      })
 
       Column() {
         Text("没有艺术家")
@@ -90,6 +112,45 @@ export default struct Artists {
       .height('100%')
       .justifyContent(FlexAlign.Center)
       .visibility(this.artists.length === 0 && this.serverStatus === true ? Visibility.Visible : Visibility.None)
+
+      AlphabetIndexer({ arrayValue: indexList, selected: 0 })
+        .selected(this.selectedIndex)
+        .color($r('app.color.font_secondary'))
+        .selectedColor($r('app.color.font'))
+        .selectedBackgroundColor($r('app.color.index'))
+        .itemSize(20)
+        .itemBorderRadius(20)
+        .font({
+          size: 12
+        })
+        .selectedFont({
+          size: 13
+        })
+        .margin({ right: 5 })
+        .visibility(Visibility.None)
+        .onSelect((index: number) => {
+          if (index === 0) {
+            this.gridScroller.scrollToIndex(0, false, ScrollAlign.START)
+          } else {
+            let find = false
+            while (index) {
+              for (let index2 = 0; index2 < this.artists.length; index2++) {
+                if (indexUtil.getIndex(this.artists[index2].name) === indexList[index]) {
+                  this.gridScroller.scrollToIndex(index2, false, ScrollAlign.START)
+                  find = true
+                  break;
+                }
+              }
+              if (find === true) {
+                break
+              }
+              index--
+            }
+            if (find === false) {
+              this.gridScroller.scrollToIndex(0, false, ScrollAlign.START)
+            }
+          }
+        })
     }
     .width('100%')
     .height('100%')

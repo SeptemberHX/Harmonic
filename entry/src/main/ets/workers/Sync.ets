@@ -1,6 +1,6 @@
 import { ErrorEvent, MessageEvents, ThreadWorkerGlobalScope, worker } from '@kit.ArkTS';
 import { i18n, intl } from '@kit.LocalizationKit';
-import { getAlbum, getArtist, getArtistInfo, getIndexes, getPlaylists, getStarred, ping } from '../utils/Api';
+import { getAlbumSongs, getArtistAlbums, getArtistInfo, getIndexes, getPlaylists, getStarred, ping } from '../utils/Api';
 import { Album, Artist, Playlist, Song } from '../utils/Interface';
 import { promptAction } from '@kit.ArkUI';
 
@@ -52,11 +52,11 @@ async function syncFromServer(baseURL: string, username: string, password: strin
     remote_artists = clearArtists(remote_artists)
     for (const artist of remote_artists) {
       artist.biography = await getArtistInfo(baseURL, username, password, artist.id)
-      artist.album = await getArtist(baseURL, username, password, artist.id);
+      artist.album = await getArtistAlbums(baseURL, username, password, artist.id);
       remote_albums = remote_albums.concat(artist.album!);
       remote_albums = clearAlbums(remote_albums)
       for (const album of artist.album!) {
-        album.song = await getAlbum(baseURL, username, password, album.id);
+        album.song = await getAlbumSongs(baseURL, username, password, album.id);
         remote_songs = remote_songs.concat(album.song!);
         remote_songs = claerSongs(remote_songs)
       }

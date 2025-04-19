@@ -17,8 +17,8 @@ import { avSession, avSession as AVSessionManager } from '@kit.AVSessionKit';
 import { fileIo as fs, picker, ReadOptions } from '@kit.CoreFileKit';
 import CryptoJS from '@ohos/crypto-js';
 import {
-  getAlbum,
-  getArtist,
+  getAlbumSongs,
+  getArtistAlbums,
   getArtistInfo,
   getCover,
   getIndexes,
@@ -304,11 +304,11 @@ struct Index {
       this.artists = this.clearArtists(this.artists)
       for (const artist of this.artists) {
         artist.biography = await getArtistInfo(this.baseURL, this.username, this.password, artist.id)
-        artist.album = await getArtist(this.baseURL, this.username, this.password, artist.id);
+        artist.album = await getArtistAlbums(this.baseURL, this.username, this.password, artist.id);
         this.albums = this.albums.concat(artist.album!);
         this.albums = this.clearAlbums(this.albums)
         for (const album of artist.album!) {
-          album.song = await getAlbum(this.baseURL, this.username, this.password, album.id);
+          album.song = await getAlbumSongs(this.baseURL, this.username, this.password, album.id);
           this.songs = this.songs.concat(album.song!);
           this.songs = this.claerSongs(this.songs)
         }

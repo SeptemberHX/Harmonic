@@ -40,6 +40,20 @@ export default struct Albums {
                   .aspectRatio(1)
                   .borderRadius(10)
                   .margin(10)
+
+                Text(album.name)
+                  .fontSize(15)
+                  .fontColor($r('app.color.font_secondary'))
+                  .margin({ top: 2 })
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+                Text(album.artist)
+                  .fontSize(15)
+                  .fontColor($r('app.color.font_secondary'))
+                  .margin({ top: 2 })
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
               }
               .width('100%')
               .height('auto')

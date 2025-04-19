@@ -1,6 +1,6 @@
 import { Album, Artist } from '../utils/Interface';
 import { curves } from '@kit.ArkUI';
-import { getArtist } from '../utils/Api';
+import { getArtistAlbums } from '../utils/Api';
 
 @Builder
 export function ArtistDetailBuilder() {
@@ -30,7 +30,7 @@ export default struct ArtistDetail {
 
   async aboutToAppear(): Promise<void> {
     if (this.artist) {
-      this.artist.album = await getArtist(this.baseURL, this.username, this.password, this.artist.id);
+      this.artist.album = await getArtistAlbums(this.baseURL, this.username, this.password, this.artist.id);
     }
   }
 

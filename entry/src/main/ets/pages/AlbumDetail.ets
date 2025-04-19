@@ -1,7 +1,7 @@
 import { curves } from '@kit.ArkUI';
 import { media } from '@kit.MediaKit';
 import { avSession as AVSessionManager } from '@kit.AVSessionKit';
-import { getAlbum, getLyrics, getStarred } from '../utils/Api';
+import { getAlbumSongs, getArtist, getArtistAlbums, getLyrics, getStarred } from '../utils/Api';
 import { Album, Artist, Line, Song, StructuredLyric } from '../utils/Interface';
 
 function formatDuration(seconds: number): string {
@@ -60,12 +60,10 @@ export default struct AlbumDetail {
   @State showDiscHeader: boolean = false
   @State discsKeys: number[] = []
 
-  getArtist() {
-    for (let artist of this.artists) {
-      if (artist.name === this.album.artist) {
-        this.artist = artist
-        break
-      }
+  async getArtist() {
+    let artist = await getArtist(this.baseURL, this.username, this.password, this.album.artistId)
+    if (artist) {
+      this.artist = artist
     }
   }
 
@@ -120,7 +118,7 @@ export default struct AlbumDetail {
 
   async aboutToAppear(): Promise<void> {
     if (this.album) {
-      this.album.song = await getAlbum(this.baseURL, this.username, this.password, this.album.id);
+      this.album.song = await getAlbumSongs(this.baseURL, this.username, this.password, this.album.id);
     }
 
     const groupedSongsMap = new Map<number, Song[]>();
@@ -166,7 +164,7 @@ export default struct AlbumDetail {
               .backgroundColor('#00000000')
               .stateEffect(false)
               .onClick(async () => {
-                this.getArtist()
+                await this.getArtist()
                 this.pageStack.replacePathByName('ArtistDetail', null);
               })
             }

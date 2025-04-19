@@ -1,7 +1,7 @@
 import { promptAction, window } from '@kit.ArkUI';
 import { media } from '@kit.MediaKit';
 import { AVCastPicker, avSession as AVSessionManager } from '@kit.AVSessionKit';
-import { createShare, getCover, getLyrics, getStarred, star, unstar } from '../utils/Api';
+import { createShare, getAlbum, getArtist, getCover, getLyrics, getStarred, star, unstar } from '../utils/Api';
 import { Album, Artist, Line, Song, StructuredLyric } from '../utils/Interface';
 import selectPlaylistBuilder from './dialogs/SelectPlaylist';
 import infoBuilder from './dialogs/Info';
@@ -189,22 +189,12 @@ export default struct Play {
     }
   }
 
-  getArtist() {
-    for (let artist of this.artists) {
-      if (artist.name === this.nowPlayingSong!.artist) {
-        this.artist = artist
-        break
-      }
-    }
+  async getArtist() {
+    this.artist = (await getArtist(this.baseURL, this.username, this.password, this.nowPlayingSong!.artistId)) ?? null;
   }
 
-  getAlbum() {
-    for (let album of this.albums) {
-      if (album.name === this.nowPlayingSong!.album) {
-        this.album = album
-        break
-      }
-    }
+  async getAlbum() {
+    this.album = (await getAlbum(this.baseURL, this.username, this.password, this.nowPlayingSong!.albumId)) ?? null;
   }
 
   fadeIn() {
@@ -578,7 +568,7 @@ export default struct Play {
       .onClick(async () => {
         this.showMore = false
         this.showPlay = false
-        this.getArtist()
+        await this.getArtist()
         this.pageStack.replacePathByName('ArtistDetail', null);
       })
 
@@ -597,7 +587,7 @@ export default struct Play {
       .onClick(async () => {
         this.showMore = false
         this.showPlay = false
-        this.getAlbum()
+        await this.getAlbum()
         this.pageStack.replacePathByName('AlbumDetail', null);
       })
 
@@ -729,6 +719,12 @@ export default struct Play {
                   .margin({ top: 5 })
                   .maxLines(1)
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .onClick(async () => {
+                    this.showMore = false
+                    this.showPlay = false
+                    await this.getArtist()
+                    this.pageStack.replacePathByName('ArtistDetail', null);
+                  })
               }
               .width("100%")
               .layoutWeight(1)

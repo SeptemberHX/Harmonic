@@ -76,6 +76,21 @@ export async function getArtist(baseURL: string, username: string, password: str
         timeout: 10000
       })
     const subsonicResponse: SubsonicResponse = response.data["subsonic-response"]
+    return subsonicResponse.artist
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    return null
+  }
+}
+
+export async function getArtistAlbums(baseURL: string, username: string, password: string, id: string) {
+  let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
+  try {
+    const response: AxiosResponse =
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getArtist' + auth + `&id=${id}`, {
+        timeout: 10000
+      })
+    const subsonicResponse: SubsonicResponse = response.data["subsonic-response"]
     return subsonicResponse.artist!.album ?? []
   } catch (error) {
     console.error(JSON.stringify(error));
@@ -110,11 +125,15 @@ export async function getAlbum(baseURL: string, username: string, password: stri
         timeout: 10000
       })
     const subsonicResponse: SubsonicResponse = response.data["subsonic-response"]
-    return subsonicResponse.album!.song
+    return subsonicResponse.album
   } catch (error) {
     console.error(JSON.stringify(error));
-    return []
+    return null
   }
+}
+
+export async function getAlbumSongs(baseURL: string, username: string, password: string, id: string) {
+  return (await getAlbum(baseURL, username, password, id))?.song
 }
 
 export async function getAlbums(baseURL: string, username: string, password: string) {
@@ -148,7 +167,7 @@ export async function getRandomSongs(baseURL: string, username: string, password
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
   try {
     const response: AxiosResponse =
-      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getRandomSongs' + auth + `&size=50`, {
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/getRandomSongs' + auth + `&size=500`, {
         timeout: 10000
       })
     const subsonicResponse: SubsonicResponse = response.data["subsonic-response"];
