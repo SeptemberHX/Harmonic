@@ -268,6 +268,7 @@ export default struct ArtistDetail {
             }
             .tabBar('歌曲')
           }
+          .layoutWeight(1)
         }
         .width('100%')
         .height('auto')

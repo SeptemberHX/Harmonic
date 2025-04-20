@@ -46,6 +46,8 @@ export interface SongList {
 
 export interface SearchList {
   song: Song[];
+  artist: Artist[];
+  album: Album[];
 }
 
 export interface SubsonicResponse {

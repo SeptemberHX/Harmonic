@@ -43,6 +43,7 @@ import Stats from './Stats';
 import selectPlaylistBuilder from './dialogs/SelectPlaylist';
 import infoBuilder from './dialogs/Info';
 import { buffer, worker } from '@kit.ArkTS';
+import SearchPage from './SearchPage';
 
 let context = getContext(this) as common.UIAbilityContext;
 let applicationContext = context.getApplicationContext();
@@ -97,6 +98,7 @@ struct Index {
   @Provide isPlaying: boolean = false
   @Provide nowPlayedTime: number = 0
   @Provide showPlay: boolean = false
+  @Provide showSearch: boolean = false
   @Provide showDevice: boolean = false
   @Provide showCover: boolean = true
   @Provide showMenu: boolean = false
@@ -288,85 +290,6 @@ struct Index {
         duration: 500
       });
     }
-  }
-
-  async getMusicData() {
-    this.serverStatus = true
-    this.showProgress = true
-    let status: string | null = await ping(this.baseURL, this.username, this.password)
-    console.log("Server status", status)
-    if (status === 'ok') {
-      this.artists = []
-      this.albums = []
-      this.songs = []
-      this.playlists = []
-      this.artists = await getIndexes(this.baseURL, this.username, this.password)
-      this.artists = this.clearArtists(this.artists)
-      for (const artist of this.artists) {
-        artist.biography = await getArtistInfo(this.baseURL, this.username, this.password, artist.id)
-        artist.album = await getArtistAlbums(this.baseURL, this.username, this.password, artist.id);
-        this.albums = this.albums.concat(artist.album!);
-        this.albums = this.clearAlbums(this.albums)
-        for (const album of artist.album!) {
-          album.song = await getAlbumSongs(this.baseURL, this.username, this.password, album.id);
-          this.songs = this.songs.concat(album.song!);
-          this.songs = this.claerSongs(this.songs)
-        }
-      }
-      this.playlists = (await getPlaylists(this.baseURL, this.username, this.password)).sort((a, b) => {
-        return Date.parse(b.changed) - Date.parse(a.changed);
-      })
-      this.selectedPlaylists = []
-      for (let playlist of this.playlists) {
-        this.selectedPlaylists.push(false)
-      }
-      let starred = await getStarred(this.baseURL, this.username, this.password)
-      if (starred !== null) {
-        this.starredSongs = starred!.song!
-      }
-      this.selectedIndex = 0
-      this.songs.sort((a, b) => {
-        return collator.compare(transliterator.transform(a.title), transliterator.transform(b.title));
-      })
-      this.albums.sort((a, b) => {
-        return collator.compare(transliterator.transform(a.title), transliterator.transform(b.title));
-      })
-      this.artists.sort((a, b) => {
-        return collator.compare(transliterator.transform(a.name), transliterator.transform(b.name));
-      })
-
-      let file =
-        fs.openSync(filesDir + '/artists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(this.artists));
-      fs.closeSync(file);
-      file =
-        fs.openSync(filesDir + '/albums.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(this.albums));
-      fs.closeSync(file);
-      file = fs.openSync(filesDir + '/songs.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(this.songs));
-      fs.closeSync(file);
-      file =
-        fs.openSync(filesDir + '/playlists.json', fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(this.playlists));
-      fs.closeSync(file);
-      file = fs.openSync(filesDir + '/starredSongs.json',
-        fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(this.starredSongs));
-      fs.closeSync(file);
-
-      console.log("获取到艺术家", this.artists.length)
-      console.log("获取到专辑", this.albums.length)
-      console.log("获取到歌曲", this.songs.length)
-      console.log("获取到歌单", this.playlists.length)
-    } else {
-      this.serverStatus = false
-      promptAction.showToast({
-        message: '连接服务器失败，请检查网络！',
-        duration: 500
-      });
-    }
-    this.showProgress = false
   }
 
   fadeIn() {
@@ -741,6 +664,26 @@ struct Index {
   menuBuilder() {
     Row() {
       Button({ type: ButtonType.Normal }) {
+        Image($r('app.media.search'))
+          .width(28)
+          .aspectRatio(1)
+          .margin({ top: 3 })
+      }
+      .width(48)
+      .aspectRatio(1)
+      .borderRadius(8)
+      .backgroundColor('#00000000')
+      .onClick(async () => {
+        if (this.showSearch === true) {
+          this.showSearch = false
+        }
+        this.showSearch = true
+      })
+      .bindContentCover($$this.showSearch, this.bindSearchPageBuilder(), {
+        modalTransition: ModalTransition.NONE,
+      })
+
+      Button({ type: ButtonType.Normal }) {
         Image(this.linkImage)
           .width(28)
           .aspectRatio(1)
@@ -987,6 +930,14 @@ struct Index {
       Play()
     }
     .transition(TransitionEffect.translate({ y: 1000 }).animation({ curve: curves.springMotion(0.6, 1) }))
+  }
+
+  @Builder
+  bindSearchPageBuilder() {
+    Column() {
+      SearchPage()
+    }
+    .transition(TransitionEffect.translate({ y: -1000 }).animation({ curve: curves.springMotion(0.6, 1) }))
   }
 
   @Builder
@@ -1386,8 +1337,6 @@ struct Index {
                       message: '请先设置服务器！',
                       duration: 500
                     });
-                  } else {
-                    await this.getMusicData()
                   }
                 })
               }

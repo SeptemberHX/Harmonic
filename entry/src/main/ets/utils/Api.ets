@@ -185,6 +185,21 @@ export async function getArtistSongs(baseURL: string, username: string, password
   }
 }
 
+export async function searchEverything(baseURL: string, username: string, password: string, artistName: string) {
+  let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
+  try {
+    const response: AxiosResponse =
+      await axios.post<string, AxiosResponse<string>>(baseURL + '/rest/search3' + auth + `&query=${encodeURIComponent(artistName)}&songCount=10&artistCount=10&albumCount=10`, {
+        timeout: 10000
+      })
+    const subsonicResponse: SubsonicResponse = response.data["subsonic-response"];
+    return subsonicResponse.searchResult3!;
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    return null;
+  }
+}
+
 export async function getRandomSongs(baseURL: string, username: string, password: string) {
   let auth = `?u=${username}&t=${CryptoJS.MD5(password + salt)}&s=${salt}&v=${version}&c=${client}&f=json`
   try {
