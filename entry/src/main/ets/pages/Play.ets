@@ -488,7 +488,7 @@ export default struct Play {
                     path += `/${this.nowPlayingSong!.artist.replace(/\//g, "&")}/${this.nowPlayingSong!.album}`
                   }
                   let filePath: string = path + `/${this.nowPlayingSong!.title}.${this.nowPlayingSong!.suffix}`;
-                  let sanFile = fs.openSync(sanPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC)
+                  let sanFile = fs.openSync(sanPath, fs.OpenMode.READ_ONLY)
                   let pubFile = fs.openSync(filePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC)
                   fs.copyFileSync(sanFile.fd, pubFile.fd)
                   fs.closeSync(sanFile.fd)
